@@ -32,6 +32,7 @@
 
          sign_keypair_public_size/0,
          sign_keypair_secret_size/0,
+         sign_keypair_seed_size/0,
          sign_keypair/0,
          sign/2,
          sign_open/2,
@@ -472,6 +473,10 @@ sign_keypair_public_size() ->
 %% @private
 sign_keypair_secret_size() ->
     enacl_nif:crypto_sign_SECRETKEYBYTES().
+
+%% @private
+sign_keypair_seed_size() ->
+    enacl_nif:crypto_sign_SEEDBYTES().
 
 %% @doc sign_keypair/0 returns a signature keypair for signing
 %%

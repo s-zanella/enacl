@@ -450,6 +450,11 @@ ERL_NIF_TERM enif_crypto_sign_SECRETKEYBYTES(ErlNifEnv *env, int argc, ERL_NIF_T
 }
 
 static
+ERL_NIF_TERM enif_crypto_sign_SEEDBYTES(ErlNifEnv *env, int argc, ERL_NIF_TERM const argv[]) {
+	return enif_make_int64(env, crypto_sign_SEEDBYTES);
+}
+
+static
 ERL_NIF_TERM enif_crypto_sign_keypair(ErlNifEnv *env, int argc, ERL_NIF_TERM const argv[]) {
 	ErlNifBinary pk, sk;
 
@@ -1541,6 +1546,7 @@ static ErlNifFunc nif_funcs[] = {
 
 	{"crypto_sign_PUBLICKEYBYTES", 0, enif_crypto_sign_PUBLICKEYBYTES},
 	{"crypto_sign_SECRETKEYBYTES", 0, enif_crypto_sign_SECRETKEYBYTES},
+	{"crypto_sign_SEEDBYTES", 0, enif_crypto_sign_SEEDBYTES},
 	erl_nif_dirty_job_cpu_bound_macro("crypto_sign_keypair", 0, enif_crypto_sign_keypair),
 
 	erl_nif_dirty_job_cpu_bound_macro("crypto_sign", 2, enif_crypto_sign),
