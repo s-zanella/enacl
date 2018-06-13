@@ -219,7 +219,7 @@ prop_box_failure_integrity() ->
                     end
             end
         end).
-        
+
 prop_seal_box_failure_integrity() ->
     ?FORALL({Msg, {PK1, SK1}}, {?FAULT_RATE(1,40,g_iodata()), ?FAULT_RATE(1,40,keypair())},
       begin
@@ -791,6 +791,26 @@ prop_curve25519_scalarmult() ->
         enacl:curve25519_scalarmult(N, <<9, 0:248>>)) ==
       enacl:curve25519_scalarmult(N,
         enacl:curve25519_scalarmult(M, <<9, 0:248>>))).
+
+%% AEAD ChaCha20Poly1305
+prop_aead_chacha20poly1305() ->
+  ?FORALL({Key, Msg, AD, Nonce},
+          {binary(32), binary(), ?LET(ADBytes, choose(0,16), binary(ADBytes)), largeint()},
+  begin
+    EncryptMsg = enacl:aead_chacha20poly1305_encrypt(Key, Nonce, AD, Msg),
+    equals(enacl:aead_chacha20poly1305_decrypt(Key, Nonce, AD, EncryptMsg), Msg)
+  end).
+
+prop_aead_chacha20poly1305_fail() ->
+  ?FORALL({Key, Msg, AD, Nonce},
+          {binary(32), binary(), ?LET(ADBytes, choose(0,16), binary(ADBytes)), largeint()},
+  begin
+    EncryptMsg = enacl:aead_chacha20poly1305_encrypt(Key, Nonce, AD, Msg),
+    case enacl:aead_chacha20poly1305_decrypt(Key, Nonce, AD, <<0:8, EncryptMsg/binary>>) of
+        {error, _} -> true;
+        _          -> false
+    end
+  end).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Joel Test Blobs
