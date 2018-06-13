@@ -1,5 +1,7 @@
 #include "erl_nif.h"
 
+#include "hacl-c/ehacl.h"
+
 #include <string.h>
 
 #include <sodium.h>
@@ -123,7 +125,7 @@ ERL_NIF_TERM enif_crypto_curve25519_scalarmult(ErlNifEnv *env, int argc, ERL_NIF
 
 	if ((argc != 2) || (!enif_inspect_binary(env, argv[0], &secret))
 			|| (!enif_inspect_binary(env, argv[1], &basepoint))
-			|| (secret.size != crypto_scalarmult_curve25519_BYTES)
+			|| (secret.size != crypto_scalarmult_curve25519_SCALARBYTES)
 			|| (basepoint.size != crypto_scalarmult_curve25519_BYTES)) {
 		return enif_make_badarg(env);
 	}
@@ -140,7 +142,7 @@ ERL_NIF_TERM enif_crypto_curve25519_scalarmult(ErlNifEnv *env, int argc, ERL_NIF
 			continue;
 		}
 
-		if (crypto_scalarmult_curve25519(output.data, secret.data, bp) < 0) {
+		if (hacl_scalarmult_curve25519(output.data, secret.data, bp) < 0) {
 			result = nacl_error_tuple(env, "scalarmult_curve25519_failed");
 			continue;
 		}
@@ -148,6 +150,9 @@ ERL_NIF_TERM enif_crypto_curve25519_scalarmult(ErlNifEnv *env, int argc, ERL_NIF
 		result = enif_make_binary(env, &output);
 	} while (0);
 
+        // 2018.06.13 SZ: I don't understand what's the point of zeroing the base point
+        // It would make sense to zero secret.data, but that wouldn't satisfy the
+        // C contract of libsodium.
 	sodium_memzero(bp, crypto_scalarmult_curve25519_BYTES);
 
 	return result;
@@ -170,7 +175,7 @@ ERL_NIF_TERM enif_crypto_sign_ed25519_keypair(ErlNifEnv *env, int argc, ERL_NIF_
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_sign_ed25519_keypair(pk.data, sk.data);
+	hacl_sign_ed25519_keypair(pk.data, sk.data);
 
 	return enif_make_tuple2(env, enif_make_binary(env, &pk), enif_make_binary(env, &sk));
 }
@@ -210,7 +215,7 @@ ERL_NIF_TERM enif_crypto_sign_ed25519_secret_to_curve25519(ErlNifEnv *env, int a
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	if (crypto_sign_ed25519_sk_to_curve25519(curve25519_sk.data, ed25519_sk.data) != 0) {
+	if (hacl_sign_ed25519_sk_to_curve25519(curve25519_sk.data, ed25519_sk.data) != 0) {
 		return nacl_error_tuple(env, "ed25519_secret_to_curve25519_failed");
 	}
 
@@ -465,7 +470,7 @@ ERL_NIF_TERM enif_crypto_sign_keypair(ErlNifEnv *env, int argc, ERL_NIF_TERM con
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_sign_keypair(pk.data, sk.data);
+	hacl_sign_keypair(pk.data, sk.data);
 
 	return enif_make_tuple2(env, enif_make_binary(env, &pk), enif_make_binary(env, &sk));
 }
@@ -495,7 +500,7 @@ ERL_NIF_TERM enif_crypto_sign(ErlNifEnv *env, int argc, ERL_NIF_TERM const argv[
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_sign(sm.data, &smlen, m.data, m.size, sk.data);
+	hacl_sign(sm.data, &smlen, m.data, m.size, sk.data);
 
 	return enif_make_sub_binary(env, enif_make_binary(env, &sm), 0, smlen);
 }
@@ -525,7 +530,7 @@ ERL_NIF_TERM enif_crypto_sign_open(ErlNifEnv *env, int argc, ERL_NIF_TERM const 
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	if (0 == crypto_sign_open(m.data, &mlen, sm.data, sm.size, pk.data)) {
+	if (0 == hacl_sign_open(m.data, &mlen, sm.data, sm.size, pk.data)) {
 		return enif_make_sub_binary(env, enif_make_binary(env, &m), 0, mlen);
 	} else {
 		enif_release_binary(&m);
@@ -752,7 +757,7 @@ ERL_NIF_TERM enif_crypto_secretbox(ErlNifEnv *env, int argc, ERL_NIF_TERM const 
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_secretbox(
+	hacl_secretbox(
 	  padded_ciphertext.data,
 	  padded_msg.data, padded_msg.size,
 	  nonce.data,
@@ -787,7 +792,7 @@ ERL_NIF_TERM enif_crypto_secretbox_open(ErlNifEnv *env, int argc, ERL_NIF_TERM c
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	if (crypto_secretbox_open(
+	if (hacl_secretbox_open(
 	    padded_msg.data,
 	    padded_ciphertext.data,
 	    padded_ciphertext.size,
@@ -827,7 +832,7 @@ ERL_NIF_TERM enif_crypto_stream_chacha20(ErlNifEnv *env, int argc, ERL_NIF_TERM 
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_stream_chacha20(c.data, c.size, n.data, k.data);
+	hacl_stream_chacha20(c.data, c.size, n.data, k.data);
 
 	return enif_make_binary(env, &c);
 }
@@ -854,7 +859,7 @@ ERL_NIF_TERM enif_crypto_stream_chacha20_xor(ErlNifEnv *env, int argc, ERL_NIF_T
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_stream_chacha20_xor(c.data, m.data, m.size, n.data, k.data);
+	hacl_stream_chacha20_xor(c.data, m.data, m.size, n.data, k.data);
 
 	return enif_make_binary(env, &c);
 }
@@ -882,7 +887,7 @@ ERL_NIF_TERM enif_crypto_stream(ErlNifEnv *env, int argc, ERL_NIF_TERM const arg
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_stream(c.data, c.size, n.data, k.data);
+	hacl_stream(c.data, c.size, n.data, k.data);
 
 	return enif_make_binary(env, &c);
 }
@@ -909,7 +914,7 @@ ERL_NIF_TERM enif_crypto_stream_xor(ErlNifEnv *env, int argc, ERL_NIF_TERM const
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_stream_xor(c.data, m.data, m.size, n.data, k.data);
+	hacl_stream_xor(c.data, m.data, m.size, n.data, k.data);
 
 	return enif_make_binary(env, &c);
 }
@@ -933,7 +938,7 @@ ERL_NIF_TERM enif_crypto_auth(ErlNifEnv *env, int argc, ERL_NIF_TERM const argv[
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_auth(a.data, m.data, m.size, k.data);
+	hacl_auth(a.data, m.data, m.size, k.data);
 
 	return enif_make_binary(env, &a);
 }
@@ -956,7 +961,7 @@ ERL_NIF_TERM enif_crypto_auth_verify(ErlNifEnv *env, int argc, ERL_NIF_TERM cons
 		return enif_make_badarg(env);
 	}
 
-	if (0 == crypto_auth_verify(a.data, m.data, m.size, k.data)) {
+	if (0 == hacl_auth_verify(a.data, m.data, m.size, k.data)) {
 		return enif_make_atom(env, "true");
 	} else {
 		return enif_make_atom(env, "false");
@@ -1006,7 +1011,7 @@ ERL_NIF_TERM enif_crypto_onetimeauth(ErlNifEnv *env, int argc, ERL_NIF_TERM cons
 		return nacl_error_tuple(env, "alloc_failed");
 	}
 
-	crypto_onetimeauth(a.data, m.data, m.size, k.data);
+	hacl_onetimeauth(a.data, m.data, m.size, k.data);
 
 	return enif_make_binary(env, &a);
 }
@@ -1029,7 +1034,7 @@ ERL_NIF_TERM enif_crypto_onetimeauth_verify(ErlNifEnv *env, int argc, ERL_NIF_TE
 		return enif_make_badarg(env);
 	}
 
-	if (0 == crypto_onetimeauth_verify(a.data, m.data, m.size, k.data)) {
+	if (0 == hacl_onetimeauth_verify(a.data, m.data, m.size, k.data)) {
 		return enif_make_atom(env, "true");
 	} else {
 		return enif_make_atom(env, "false");

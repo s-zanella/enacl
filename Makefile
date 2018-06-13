@@ -3,6 +3,7 @@ RUN_EQC=erl -pa _build/default/lib/enacl/ebin -noshell -s enacl_eqc -s init stop
 
 .PHONY: compile
 compile:
+	$(MAKE) -C c_src/hacl-c libehacl.so
 	$(REBAR) compile | sed -e 's|_build/default/lib/enacl/||g'
 
 eqc_compile: compile
