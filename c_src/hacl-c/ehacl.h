@@ -26,6 +26,7 @@
  **************************************************************************/
 
 #include <inttypes.h>
+#include <sodium.h>
 
 int hacl_scalarmult_curve25519(uint8_t *out, const uint8_t *secret, const uint8_t *point);
 
@@ -58,3 +59,7 @@ int hacl_auth_verify(const uint8_t *tag, const uint8_t *input, uint64_t input_le
 int hacl_onetimeauth(uint8_t *output, const uint8_t *input, uint64_t input_len, const uint8_t *key);
 
 int hacl_onetimeauth_verify(const uint8_t *auth, const uint8_t *input, uint64_t input_len, const uint8_t *key);
+
+int hacl_aead_chacha20poly1305_encrypt(uint8_t *c, uint64_t *clen, uint8_t *m, uint64_t mlen, uint8_t *ad, uint64_t ad_len, uint8_t *nsec, uint8_t *npub, uint8_t *k);
+
+int hacl_aead_chacha20poly1305_decrypt(uint8_t *m, uint64_t *mlen, uint8_t *nsec, uint8_t *c, uint64_t clen, uint8_t *ad, uint64_t ad_len, uint8_t *npub, uint8_t *k);

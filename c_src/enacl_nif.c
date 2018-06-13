@@ -1390,7 +1390,7 @@ ERL_NIF_TERM enif_crypto_aead_chacha20poly1305_encrypt(ErlNifEnv *env, int argc,
                   continue;
           }
 
-          if (crypto_aead_chacha20poly1305_ietf_encrypt(ciphertext.data, NULL, message.data, message.size,
+          if (hacl_aead_chacha20poly1305_encrypt(ciphertext.data, NULL, message.data, message.size,
                                                         ad.data, ad.size, NULL, nonce.data, key.data) < 0) {
                   result = nacl_error_tuple(env, "aead_chacha20poly1305_ietf_encrypt_failed");
                   continue;
@@ -1425,7 +1425,7 @@ ERL_NIF_TERM enif_crypto_aead_chacha20poly1305_decrypt(ErlNifEnv *env, int argc,
                   continue;
           }
 
-          if (crypto_aead_chacha20poly1305_ietf_decrypt(message.data, NULL, NULL, ciphertext.data, ciphertext.size,
+          if (hacl_aead_chacha20poly1305_decrypt(message.data, NULL, NULL, ciphertext.data, ciphertext.size,
                                                         ad.data, ad.size, nonce.data, key.data) < 0) {
                   result = nacl_error_tuple(env, "aead_chacha20poly1305_ietf_decrypt_failed");
                   continue;

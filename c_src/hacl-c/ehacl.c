@@ -20,6 +20,8 @@
 #undef K___uint32_t_uint8_t_
 #include "NaCl.h"
 
+#include <ehacl.h>
+
 #define EXPORT __attribute__((visibility("default")))
 
 extern void randombytes(uint8_t *bytes, uint64_t bytes_len);
@@ -75,22 +77,22 @@ int hacl_sign_open(uint8_t *unsigned_msg, uint64_t *unsigned_msg_len, const uint
   }
 }
 
-uint32_t crypto_secretbox_easy(uint8_t *c, uint8_t *m, uint64_t mlen, uint8_t *n, uint8_t *k){
+int hacl_secretbox_easy(uint8_t *c, uint8_t *m, uint64_t mlen, uint8_t *n, uint8_t *k){
   return NaCl_crypto_secretbox_easy(c, m, mlen, n, k);
 }
 
 EXPORT
 int hacl_secretbox(uint8_t *cipher, const uint8_t *msg, uint64_t msg_len, const uint8_t *nonce, const uint8_t *key){
-  return crypto_secretbox_easy(cipher, (uint8_t *)msg, msg_len - 32, (uint8_t *)nonce, (uint8_t *)key);
+  return hacl_secretbox_easy(cipher, (uint8_t *)msg, msg_len - 32, (uint8_t *)nonce, (uint8_t *)key);
 }
 
-uint32_t crypto_secretbox_open_detached(uint8_t *m, uint8_t *c, uint8_t *mac, uint64_t clen, uint8_t *n, uint8_t *k){
+int hacl_secretbox_open_detached(uint8_t *m, uint8_t *c, uint8_t *mac, uint64_t clen, uint8_t *n, uint8_t *k){
   return NaCl_crypto_secretbox_open_detached(m, c, mac, clen, n, k);
 }
 
 EXPORT
 int hacl_secretbox_open(uint8_t *msg, const uint8_t *cipher, uint64_t cipher_len, const uint8_t *nonce, const uint8_t *key){
-  return crypto_secretbox_open_detached(msg, (uint8_t *)cipher, (uint8_t *)cipher + 16, cipher_len - 32, (uint8_t *)nonce, (uint8_t *)key);
+  return hacl_secretbox_open_detached(msg, (uint8_t *)cipher, (uint8_t *)cipher + 16, cipher_len - 32, (uint8_t *)nonce, (uint8_t *)key);
 }
 
 EXPORT
@@ -161,4 +163,23 @@ int hacl_onetimeauth_verify(const uint8_t *auth, const uint8_t *input, uint64_t 
   }
   tmp >>= 7;
   return (int)tmp - 1;
+}
+
+EXPORT
+int hacl_aead_chacha20poly1305_encrypt(uint8_t *c, uint64_t *clen, uint8_t *m, uint64_t mlen, uint8_t *ad, uint64_t ad_len, uint8_t *nsec, uint8_t *npub, uint8_t *k){
+  Hacl_Chacha20Poly1305_aead_encrypt(c, c + mlen, m, mlen, ad, ad_len, k, npub);
+  return 0;
+}
+
+EXPORT
+int hacl_aead_chacha20poly1305_decrypt(uint8_t *m, uint64_t *mlen, uint8_t *nsec, uint8_t *c, uint64_t clen, uint8_t *ad, uint64_t ad_len, uint8_t *npub, uint8_t *k){
+  uint32_t mlen_ = clen - crypto_aead_chacha20poly1305_ABYTES;
+  uint32_t res = Hacl_Chacha20Poly1305_aead_decrypt(m, c, mlen_, c + mlen_, ad, ad_len, k, npub);
+  if (res == 0) {
+    if (mlen != NULL) { *mlen = mlen_; }
+    return 0;
+  }
+  else {
+    return -1;
+  }
 }
